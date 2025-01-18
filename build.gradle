@@ -23,8 +23,10 @@ repositories {
 }
 
 dependencies {
-  implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.+'
-  implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.+'
+//  implementation group: 'org.slf4j', name: 'slf4j-api', version: '2.0.+'
+    implementation 'org.apache.directory.studio:org.slf4j.api:1.7.2'
+
+    implementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.+'
 
   implementation 'com.datastax.cassandra:cassandra-driver-core:3.3.0'
   //implementation 'com.datastax.oss:java-driver-core:4.0.1'
