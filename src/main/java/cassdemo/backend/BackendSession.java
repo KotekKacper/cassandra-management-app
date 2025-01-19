@@ -26,10 +26,14 @@ public class BackendSession {
 
 	private Session session;
 
-	private static PreparedStatement CREATE_CLEAR_DIRECTOR;
-	private static PreparedStatement CREATE_CLEAR_EMPLOYEE;
-	private static PreparedStatement CREATE_CLEAR_SKILL;
-	private static PreparedStatement CREATE_CLEAR_TASK;
+	private static PreparedStatement DROP_TABLE_DIRECTOR;
+	private static PreparedStatement DROP_TABLE_EMPLOYEE;
+	private static PreparedStatement DROP_TABLE_SKILL;
+	private static PreparedStatement DROP_TABLE_TASK;
+	private static PreparedStatement CREATE_TABLE_DIRECTOR;
+	private static PreparedStatement CREATE_TABLE_EMPLOYEE;
+	private static PreparedStatement CREATE_TABLE_SKILL;
+	private static PreparedStatement CREATE_TABLE_TASK;
 	private static PreparedStatement INSERT_INTO_DIRECTOR;
 	private static PreparedStatement SELECT_DIRECTOR;
 	private static PreparedStatement ADD_DIRECTOR_TASK;
@@ -52,31 +56,39 @@ public class BackendSession {
 		} catch (Exception e) {
 			throw new BackendException("Could not connect to the cluster. " + e.getMessage() + ".", e);
 		}
-		prepareStatements();
+		prepareInitialStatements();
 	}
 
-	private void prepareStatements() throws BackendException {
+	private void prepareInitialStatements() throws BackendException {
+		try {
+			DROP_TABLE_DIRECTOR = session.prepare("DROP TABLE IF EXISTS Director;");
+			DROP_TABLE_EMPLOYEE = session.prepare("DROP TABLE IF EXISTS Employee;");
+			DROP_TABLE_SKILL = session.prepare("DROP TABLE IF EXISTS Skill;");
+			DROP_TABLE_TASK = session.prepare("DROP TABLE IF EXISTS Task;");
+			CREATE_TABLE_DIRECTOR = session.prepare("CREATE TABLE Director (name text, tasks list<text>, PRIMARY KEY (name));");
+			CREATE_TABLE_EMPLOYEE = session.prepare("CREATE TABLE Employee (employee_id text, name text, age int, skills list<text>, task_id text, PRIMARY KEY (employee_id));");
+			CREATE_TABLE_SKILL = session.prepare("CREATE TABLE Skill (skill_name text, employee_id text, PRIMARY KEY ((skill_name), employee_id));");
+			CREATE_TABLE_TASK = session.prepare("CREATE TABLE Task (task_id text, employee_id text, name text, deadline text, finished boolean, people_required int, skills_required list<text>, PRIMARY KEY (task_id));");
+		} catch (Exception e) {
+			throw new BackendException("Could not prepare statements. " + e.getMessage() + ".", e);
+		}
+
+		logger.info("Initial Statements prepared");
+	}
+
+	public void prepareStatements() throws BackendException {
 		try {
 			// SELECT_COLUMNS = session.prepare("SELECT * FROM x;").setConsistencyLevel(ConsistencyLevel.ONE);
-			
-			CREATE_CLEAR_DIRECTOR = session.prepare("DROP TABLE IF EXISTS Director;" +
-													"CREATE TABLE Director (name text, tasks list<text>, PRIMARY KEY (name));");
-			CREATE_CLEAR_EMPLOYEE = session.prepare("DROP TABLE IF EXISTS Employee;" +
-													"CREATE TABLE Employee (employee_id text, name text, age int, skills list<text>, task_id text, PRIMARY KEY (employee_id));");
-			CREATE_CLEAR_SKILL = session.prepare("DROP TABLE IF EXISTS Skill;" +
-												 "CREATE TABLE Skill (skill_name text, employee_id text, PRIMARY KEY (skill_name), employee_id);");
-			CREATE_CLEAR_TASK = session.prepare("DROP TABLE IF EXISTS Task;" +
-												"CREATE TABLE Task (task_id text, employee_id text, name text, deadline text, finished boolean, people_required int, skills_required list<text>, PRIMARY KEY ((task_id), employee_id));");
 			INSERT_INTO_DIRECTOR = session.prepare("INSERT INTO Director (name) VALUES (?);");
 			SELECT_DIRECTOR = session.prepare("SELECT * FROM Director WHERE name = ?;");
 			ADD_DIRECTOR_TASK = session.prepare("UPDATE Director SET tasks = tasks + ? WHERE name = ?;");
 			REMOVE_DIRECTOR_TASK = session.prepare("UPDATE Director SET tasks = tasks - ? WHERE name = ?;");
 			INSERT_INTO_EMPLOYEE = session.prepare("INSERT INTO Employee (employee_id, name, age, skills) VALUES (?, ?, ?, ?);");
-			SELECT_EMPLOYEE = session.prepare("SELECT * FROM Director WHERE name = ?;");
+			SELECT_EMPLOYEE = session.prepare("SELECT * FROM Employee WHERE employee_id = ?;");
 			UPDATE_EMPLOYEE_TASK = session.prepare("UPDATE Employee SET task_id = ? WHERE employee_id = ?;");
 			INSERT_INTO_SKILL = session.prepare("INSERT INTO Skill (skill_name, employee_id) VALUES (?, ?);");
-			SELECT_SKILL = session.prepare("SELECT * FROM Director WHERE name = ?;");
-			INSERT_TASK = session.prepare("INSERT INTO Task (task_id, name, deadline, people_required, skills_required, employee_id) VALUES (?, ?, ?, ?, ?);");
+			SELECT_SKILL = session.prepare("SELECT * FROM Skill WHERE skill_name = ?;");
+			INSERT_TASK = session.prepare("INSERT INTO Task (task_id, name, deadline, people_required, skills_required) VALUES (?, ?, ?, ?, ?);");
 			ADD_EMPLOYEE_TO_TASK = session.prepare("INSERT INTO Task (task_id, employee_id) VALUES (?, ?);");
 			SELECT_TASK = session.prepare("SELECT * FROM Task WHERE task_id = ?;");
 			FINISH_TASK = session.prepare("UPDATE Task SET finished = true WHERE task_id = ?;");
@@ -88,10 +100,12 @@ public class BackendSession {
 	}
 
 	public void createDirectorTable() throws BackendException {
-		BoundStatement bs = new BoundStatement(CREATE_CLEAR_DIRECTOR);
+		BoundStatement bs1 = new BoundStatement(DROP_TABLE_DIRECTOR);
+		BoundStatement bs2 = new BoundStatement(CREATE_TABLE_DIRECTOR);
 
 		try {
-			session.execute(bs);
+			session.execute(bs1);
+			session.execute(bs2);
 		} catch (Exception e) {
 			throw new BackendException("Could not create table director. " + e.getMessage() + ".", e);
 		}
@@ -100,10 +114,12 @@ public class BackendSession {
 	}
 
 	public void createEmployeeTable() throws BackendException {
-		BoundStatement bs = new BoundStatement(CREATE_CLEAR_EMPLOYEE);
+		BoundStatement bs1 = new BoundStatement(DROP_TABLE_EMPLOYEE);
+		BoundStatement bs2 = new BoundStatement(CREATE_TABLE_EMPLOYEE);
 
 		try {
-			session.execute(bs);
+			session.execute(bs1);
+			session.execute(bs2);
 		} catch (Exception e) {
 			throw new BackendException("Could not create table employee. " + e.getMessage() + ".", e);
 		}
@@ -112,10 +128,12 @@ public class BackendSession {
 	}
 
 	public void createSkillTable() throws BackendException {
-		BoundStatement bs = new BoundStatement(CREATE_CLEAR_SKILL);
+		BoundStatement bs1 = new BoundStatement(DROP_TABLE_SKILL);
+		BoundStatement bs2 = new BoundStatement(CREATE_TABLE_SKILL);
 
 		try {
-			session.execute(bs);
+			session.execute(bs1);
+			session.execute(bs2);
 		} catch (Exception e) {
 			throw new BackendException("Could not create table skill. " + e.getMessage() + ".", e);
 		}
@@ -124,10 +142,12 @@ public class BackendSession {
 	}
 
 	public void createTaskTable() throws BackendException {
-		BoundStatement bs = new BoundStatement(CREATE_CLEAR_TASK);
+		BoundStatement bs1 = new BoundStatement(DROP_TABLE_TASK);
+		BoundStatement bs2 = new BoundStatement(CREATE_TABLE_TASK);
 
 		try {
-			session.execute(bs);
+			session.execute(bs1);
+			session.execute(bs2);
 		} catch (Exception e) {
 			throw new BackendException("Could not create table task. " + e.getMessage() + ".", e);
 		}
@@ -201,8 +221,8 @@ public class BackendSession {
 	public String upsertEmployee(String name, int age, List<String> skills) throws BackendException {
 		String generatedUUID = UUID.randomUUID().toString();
 
-		BoundStatement bs = new BoundStatement(INSERT_INTO_DIRECTOR);
-		bs.bind(generatedUUID, name, skills);
+		BoundStatement bs = new BoundStatement(INSERT_INTO_EMPLOYEE);
+		bs.bind(generatedUUID, name, age, skills);
 
 		try {
 			session.execute(bs);

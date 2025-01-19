@@ -24,6 +24,8 @@ public class Main {
 		String contactPoint = null;
 		String keyspace = null;
 
+		System.out.println("HERE1");
+
 		Properties properties = new Properties();
 		try {
 			properties.load(Main.class.getClassLoader().getResourceAsStream(PROPERTIES_FILENAME));
@@ -34,11 +36,13 @@ public class Main {
 			ex.printStackTrace();
 		}
 
+		System.out.println("HERE2");
+
 		Operations op = new Operations(contactPoint, keyspace);
 		op.initDatabase();
 		op.addEmployee("Patryk Lukaszewski", 100, Arrays.asList("programming", "dancing"));
 		op.addEmployee("Kacper Garncarek", 200, Arrays.asList("programming", "music"));
 
-		while (true);
+		System.exit(0);
 	}
 }

@@ -16,16 +16,21 @@ public class Operations {
         try {
             this.bs = new BackendSession(contactPoint, keyspace);
         } catch (Exception e) {
+            System.out.println(e);
         }
     }
 
     public void initDatabase() {
+
+
         try {
             bs.createDirectorTable();
             bs.createEmployeeTable();
             bs.createSkillTable();
             bs.createTaskTable();
+            bs.prepareStatements();
         } catch (Exception e) {
+            System.out.println(e);
         }
     }
 
@@ -34,6 +39,7 @@ public class Operations {
         try {
             bs.upsertDirector(name);
         } catch (Exception e) {
+            System.out.println(e);
         }
     }
 
@@ -41,6 +47,7 @@ public class Operations {
         try {
             return bs.getDirector(name);
         } catch (Exception e) {
+            System.out.println(e);
             return null;
         }
     }
@@ -50,6 +57,7 @@ public class Operations {
         try {
             employeeID = bs.upsertEmployee(name, age, skills);
         } catch (Exception e) {
+            System.out.println(e);
             return null;
         }
 
@@ -58,6 +66,7 @@ public class Operations {
                 bs.upsertSkill(skill, employeeID);
             }
         } catch (Exception e) {
+            System.out.println(e);
         }
 
         return employeeID;
@@ -67,6 +76,7 @@ public class Operations {
         try {
             return bs.getEmployee(employeeID);
         } catch (Exception e) {
+            System.out.println(e);
             return null;
         }
     }
@@ -75,6 +85,7 @@ public class Operations {
         try {
             return bs.getSkills(skill);
         } catch (Exception e) {
+            System.out.println(e);
             return null;
         }
     }
@@ -84,12 +95,14 @@ public class Operations {
         try {
             taskID = bs.upsertTask(taskName, deadline, peopleRequired, skillsRequired);
         } catch (Exception e) {
+            System.out.println(e);
             return null;
         }
 
         try {
             bs.addDirectorTask(taskID, directorName);
         } catch (Exception e) {
+            System.out.println(e);
         }
 
         return taskID;
@@ -99,12 +112,14 @@ public class Operations {
         try {
             bs.addEmployeeToTask(taskID, employeeID);
         } catch (Exception e) {
+            System.out.println(e);
             return;
         }
 
         try {
             bs.updateEmployeeTask(taskID, employeeID);
         } catch (Exception e) {
+            System.out.println(e);
         }
     }
 
@@ -112,6 +127,7 @@ public class Operations {
         try {
             return bs.getTask(taskID);
         } catch (Exception e) {
+            System.out.println(e);
             return null;
         }
     }
@@ -123,12 +139,14 @@ public class Operations {
         try {
             bs.finishTask(taskID);
         } catch (Exception e) {
+            System.out.println(e);
             return;
         }
 
         try {
             bs.removeDirectorTask(taskID, directorName);
         } catch (Exception e) {
+            System.out.println(e);
         }
 
         try {
@@ -136,6 +154,7 @@ public class Operations {
                 bs.updateEmployeeTask(null, employeeID);
             }
         } catch (Exception e) {
+            System.out.println(e);
         }
     }
     
