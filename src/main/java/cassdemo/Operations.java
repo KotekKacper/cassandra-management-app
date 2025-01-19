@@ -9,80 +9,121 @@ public class Operations {
 
     private BackendSession bs;
 
-
     public Operations(String contactPoint, String keyspace) {
         this.bs = new BackendSession(contact_point, keyspace);
-
     }
 
     public void initDatabase() {
-        // Add clear table Director
-
-
-        // Add clear table Employee
-
-
-        // Add clear table Skill
-
-
-        // Add clear table Task
-
+        bs.createDirectorTable();
+        bs.createEmployeeTable();
+        bs.createSkillTable();
+        bs.createTaskTable();
     }
 
+    // return UUID of the added Director
     public String addDirector(String name) {
-        // Inserting a director
-
+        try {
+            return bs.upsertDirector(name);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
-    public getDirector(String name) {
-        // Selecting a director
-
+    public Director getDirector(String name) {
+        try {
+            return bs.getDirector(name);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public String addEmployee(String name, int age, List<String> skills) {
-        // Inserting an employee
+        String employeeID;
+        try {
+            employeeID = bs.upsertEmployee(name, age, skills);
+        } catch (Exception e) {
+            return null;
+        }
 
+        try {
+            for (String skill: skills) {
+                bs.upsertSkill(skill);
+            }
+        } catch (Exception e) {
+        }
 
-        // Inserting skills
-
+        return employeeID;
     }
 
-    public getEmployee() {
-        // Selecting an employee
-
+    public Employee getEmployee(String empolyeeID) {
+        try {
+            return bs.getEmployee(employeeID);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
-    public getSkilledEmploees(String skill) {
-        // Selecting employees with a given skill
-
+    public Skill getSkilledEmploees(String skill) {
+        try {
+            return bs.getSkills(skill);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public String addTask(String taskName, String deadline, int peopleRequired, List<String> skillsRequired) {
-        // Inserting a task
+        String taskID;
+        try {
+            taskID = bs.upsertEmployee(name, age, skills);
+        } catch (Exception e) {
+            return null;
+        }
 
-        // Updating a director
+        try {
+            bs.addDirectorTask(taskID);
+        } catch (Exception e) {
+        }
 
+        return taskID;
     }
 
     public void assignTask(String taskID, String employeeID) {
-        // Inserting a task
+        try {
+            bs.addEmployeeToTask(taskID, employeeID);
+        } catch (Exception e) {
+            return;
+        }
 
-        // Updating an employee
-
+        try {
+            bs.updateEmployeeTask(taskID);
+        } catch (Exception e) {
+        }
     }
 
-    public getTask() {
-        // Selecting a task
-
+    public Task getTask(String taskID) {
+        try {
+            return bs.getTask(taskID);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public void finishTask(String taskID) {
-        // Updating tasks
+        try {
+            bs.finishTask(taskID);
+        } catch (Exception e) {
+            return null;
+        }
 
-        // Updating a director
+        try {
+            bs.removeDirectorTask(taskID);
+        } catch (Exception e) {
+        }
 
-        // Updating an employee
-
+        try {
+            bs.updateEmployeeTask(null);
+        } catch (Exception e) {
+        }
     }
     
 }
