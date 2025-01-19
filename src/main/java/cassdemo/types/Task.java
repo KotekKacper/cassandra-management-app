@@ -4,7 +4,7 @@ import java.util.List;
 
 public class Task {
     private String taskId;
-    private String employeeId;
+    private List<String> employeeIdList;
     private String name;
     private String deadline;
     private boolean finished;
@@ -13,7 +13,7 @@ public class Task {
 
     public Task(String taskId, String employeeId, String name, String deadline, boolean finished, int peopleRequired, List<String> skillsRequired) {
         this.taskId = taskId;
-        this.employeeId = employeeId;
+        this.employeeIdList = employeeIdList != null ? employeeIdList : new ArrayList<>();
         this.name = name;
         this.deadline = deadline;
         this.finished = finished;
@@ -29,14 +29,14 @@ public class Task {
         this.taskId = taskId;
     }
 
-    public String getEmployeeId() {
-        return employeeId;
+    public List<String> getEmployeeIdList() {
+        return employeeIdList;
     }
 
-    public void setEmployeeId(String employeeId) {
-        this.employeeId = employeeId;
+    public void setEmployeeIdList(List<String> employeeIdList) {
+        this.employeeIdList = employeeIdList;
     }
-
+    
     public String getName() {
         return name;
     }

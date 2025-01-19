@@ -141,7 +141,7 @@ public class BackendSession {
 		logger.info("Director " + name + " upserted");
 	}
 
-	public List<Director> getDirectors(String name) throws BackendException {
+	public Director getDirector(String name) throws BackendException {
 		List<Director> directors = new ArrayList<>();
 		BoundStatement bs = new BoundStatement(SELECT_DIRECTOR);
 		bs.bind(name);
@@ -158,8 +158,12 @@ public class BackendSession {
 			List<String> tasks = row.getList("tasks", String.class);
 			directors.add(new Director(name, tasks));
 		}
-	
-		return directors;
+
+		if (directors.isEmpty()) {
+			return null;
+		} else {
+			return directors[0];
+		}
 	}
 
 	public void addDirectorTask(String taskID, String directorName) throws BackendException {
@@ -205,7 +209,7 @@ public class BackendSession {
 		return generatedUUID;
 	}
 	
-	public List<Employee> getEmployees(String employeeID) throws BackendException {
+	public Employee getEmployee(String employeeID) throws BackendException {
 		List<Employee> employees = new ArrayList<>();
 		BoundStatement bs = new BoundStatement(SELECT_EMPLOYEE);
 		bs.bind(employeeID);
@@ -225,8 +229,12 @@ public class BackendSession {
 			String taskId = row.getString("task_id");
 			employees.add(new Employee(employeeId, name, age, skills, taskId));
 		}
-	
-		return employees;
+
+		if (employees.isEmpty()) {
+			return null;
+		} else {
+			return employees[0];
+		}
 	}
 
 	public void updateEmployeeTask(String taskID, String employeeID) throws BackendException {
@@ -293,7 +301,7 @@ public class BackendSession {
 		return generatedUUID;
 	}
 
-	public void upsertTask(String taskID, String employeeID) throws BackendException {
+	public void addEmployeeToTask(String taskID, String employeeID) throws BackendException {
 		BoundStatement bs = new BoundStatement(ADD_EMPLOYEE_TO_TASK);
 		bs.bind(taskID, employeeID);
 
@@ -306,8 +314,7 @@ public class BackendSession {
 		logger.info("Task " + name + " upserted");
 	}
 
-	public List<Task> selectTasks(String taskID) throws BackendException {
-		List<Task> tasks = new ArrayList<>();
+	public Task selectTask(String taskID) throws BackendException {
 		BoundStatement bs = new BoundStatement(SELECT_TASK);
 		bs.bind(taskID);
 	
@@ -317,223 +324,55 @@ public class BackendSession {
 		} catch (Exception e) {
 			throw new BackendException("Could not perform a query. " + e.getMessage() + ".", e);
 		}
-	
+
+		List<String> employeeIds = new ArrayList<>();
+		String name = null;
+		String deadline = null;
+		Boolean finished = null;
+		Integer peopleRequired = null;
+		List<String> skillsRequired = null;
+
 		for (Row row : rs) {
-			String taskId = row.getString("task_id");
 			String employeeId = row.getString("employee_id");
-			String name = row.getString("name");
-			String deadline = row.getString("deadline");
-			Boolean finished = row.getBool("finished");
-			Integer peopleRequired = row.getInt("people_required");
-			List<String> skillsRequired = row.getList("skills_required", String.class);
-			tasks.add(new Task(taskId, employeeId, name, deadline, finished, peopleRequired, skillsRequired));
-		}
-	
-		return tasks;
-	}
-	
-	private static PreparedStatement FINISH_TASK;
-
-
-
-
-	public String selectAll() throws BackendException {
-		StringBuilder builder = new StringBuilder();
-		BoundStatement bs = new BoundStatement(SELECT_ALL_FROM_USERS);
-
-		ResultSet rs = null;
-
-		try {
-			rs = session.execute(bs);
-		} catch (Exception e) {
-			throw new BackendException("Could not perform a query. " + e.getMessage() + ".", e);
-		}
-
-		for (Row row : rs) {
-			String rcompanyName = row.getString("companyName");
-			String rname = row.getString("name");
-			int rphone = row.getInt("phone");
-			String rstreet = row.getString("street");
-
-			builder.append(String.format(USER_FORMAT, rcompanyName, rname, rphone, rstreet));
-		}
-
-		return builder.toString();
-	}
-
-	public void upsertUser(String companyName, String name, int phone, String street) throws BackendException {
-		BoundStatement bs = new BoundStatement(INSERT_INTO_USERS);
-		bs.bind(companyName, name, phone, street);
-
-		try {
-			session.execute(bs);
-		} catch (Exception e) {
-			throw new BackendException("Could not perform an upsert. " + e.getMessage() + ".", e);
-		}
-
-		logger.info("User " + name + " upserted");
-	}
-
-	public void deleteAll() throws BackendException {
-		BoundStatement bs = new BoundStatement(DELETE_ALL_FROM_USERS);
-
-		try {
-			session.execute(bs);
-		} catch (Exception e) {
-			throw new BackendException("Could not perform a delete operation. " + e.getMessage() + ".", e);
-		}
-
-		logger.info("All users deleted");
-	}
-
-	public boolean isNickFree(String nick) throws BackendException {
-		StringBuilder builder = new StringBuilder();
-		BoundStatement bs = new BoundStatement(SELECT_ALL_FROM_NICKS);
-
-		ResultSet rs = null;
-
-		try {
-			rs = session.execute(bs);
-		} catch (Exception e) {
-			throw new BackendException("Could not perform a query. " + e.getMessage() + ".", e);
-		}
-
-		for (Row row : rs) {
-			String rname = row.getString("name");
-			boolean ravailable = row.getBool("avalible");
-			int rpid = row.getInt("pid");
-
-			if (Objects.equals(rname, nick)) {
-                return ravailable;
+			if (employeeId != null) {
+				employeeIds.add(employeeId);
 			}
-		}
-		return true;
-	}
+	
+			// Pobierz dane taska, jeśli nie były pobrane, gdy są dostępne (czyli nie są `null`)
+			if (name == null) {
+				String potentialName = row.getString("name");
+				String potentialDeadline = row.getString("deadline");
+				Boolean potentialFinished = row.getBool("finished");
+				Integer potentialPeopleRequired = row.getInt("people_required");
+				List<String> potentialSkillsRequired = row.getList("skills_required", String.class);
 
-	public void insertNick(String nick, int pid) throws BackendException {
-		BoundStatement bs = new BoundStatement(INSERT_INTO_NICKS);
-		bs.bind(nick, false, pid);
-
-		try {
-			session.execute(bs);
-		} catch (Exception e) {
-			throw new BackendException("Could not perform an upsert. " + e.getMessage() + ".", e);
-		}
-
-//		logger.info("User " + nick + " upserted");
-	}
-
-	public boolean isNickOur(String nick, int pid) throws BackendException {
-		StringBuilder builder = new StringBuilder();
-		BoundStatement bs = new BoundStatement(SELECT_ALL_FROM_NICKS);
-
-		ResultSet rs = null;
-
-		try {
-			rs = session.execute(bs);
-		} catch (Exception e) {
-			throw new BackendException("Could not perform a query. " + e.getMessage() + ".", e);
-		}
-
-		for (Row row : rs) {
-			String rname = row.getString("name");
-			boolean ravailable = row.getBool("avalible");
-			int rpid = row.getInt("pid");
-
-			if (Objects.equals(rname, nick)) {
-				if (rpid == pid) {
-//					System.out.println("Our nick: " + nick);
-					return true;
+				// Aktualizuj dane taska, jeśli wszystkie pola są dostępne
+				if (potentialName != null && potentialDeadline != null && potentialFinished != null 
+					&& potentialPeopleRequired != null && potentialSkillsRequired != null) {
+					name = potentialName;
+					deadline = potentialDeadline;
+					finished = potentialFinished;
+					peopleRequired = potentialPeopleRequired;
+					skillsRequired = potentialSkillsRequired;
 				}
-//				System.out.println("Nick: " + nick + " of " + rpid);
-				logger.info("Nick: " + nick + " of " + rpid);
 			}
 		}
-		return false;
+
+		Task task = new Task(taskID, employeeIds, name, deadline, finished, peopleRequired, skillsRequired);
+		return task;
 	}
 
-	public void deleteNick(String nick) throws BackendException {
-		BoundStatement bs = new BoundStatement(DELETE_NICK);
-		bs.bind(nick);
-
-		try {
-			session.execute(bs);
-		} catch (Exception e) {
-			throw new BackendException("Could not perform a deletion. " + e.getMessage() + ".", e);
-		}
-
-//		logger.info("Deleted " + nick);
-	}
-
-	public void setNick(int pid) throws BackendException, InterruptedException {
-		while (true) {
-			// 1.
-			String chosenNick = getRandom(nicks);
-//			System.out.println("1. Chosen Nick: " + chosenNick);
-			// 2.
-			boolean nickFree = isNickFree(chosenNick);
-//			System.out.println("2. Nick Free: " + nickFree);
-			// 3.
-			if (!nickFree) {
-				continue;
-			}
-			// 4.
-			insertNick(chosenNick, pid);
-//			System.out.println("4. Nick inserted");
-			// 5. i 6.
-			boolean nickOur = isNickOur(chosenNick, pid);
-			if (!nickOur) {
-				continue;
-			}
-//			System.out.println("5. Is Nick our:" + nickOur);
-			// 7.
-			TimeUnit.MILLISECONDS.sleep(1);
-			// 8.
-			deleteNick(chosenNick);
-//			System.out.println("8. Deleted nick");
-		}
-	}
-
-	public void updateColumns(int pid) throws BackendException {
-		BoundStatement bs = new BoundStatement(UPDATE_COLUMNS);
-		bs.bind(pid, -1*pid);
-//		logger.info("Set value: "+pid);
+	public void finishTask(String taskID) throws BackendException {
+		BoundStatement bs = new BoundStatement(FINISH_TASK);
+		bs.bind(taskID);
 
 		try {
 			session.execute(bs);
 		} catch (Exception e) {
 			throw new BackendException("Could not perform an upsert. " + e.getMessage() + ".", e);
 		}
-	}
 
-	public void selectColumns() throws BackendException {
-		StringBuilder builder = new StringBuilder();
-		BoundStatement bs = new BoundStatement(SELECT_COLUMNS);
-
-		ResultSet rs = null;
-
-		try {
-			rs = session.execute(bs);
-		} catch (Exception e) {
-			throw new BackendException("Could not perform a query. " + e.getMessage() + ".", e);
-		}
-
-		for (Row row : rs) {
-			int id = row.getInt("id");
-			int col1 = row.getInt("col1");
-			int col2 = row.getInt("col2");
-			if (col1 != -col2) {
-				logger.info("ID: "+id+" Col1: "+col1+" Col2: "+col2);
-			}
-		}
-	}
-
-	public void zad4(int pid) throws BackendException, InterruptedException {
-		while(true) {
-			updateColumns(pid);
-			selectColumns();
-			TimeUnit.MILLISECONDS.sleep(1);
-		}
+		logger.info("Task " + taskID + " finished");
 	}
 
 	protected void finalize() {
