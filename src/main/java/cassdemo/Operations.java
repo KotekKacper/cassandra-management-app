@@ -1,5 +1,8 @@
 package cassdemo;
 
+import java.util.List;
+
+import cassdemo.backend.BackendSession;
 import cassdemo.types.Director;
 import cassdemo.types.Employee;
 import cassdemo.types.Skill;
@@ -10,22 +13,27 @@ public class Operations {
     private BackendSession bs;
 
     public Operations(String contactPoint, String keyspace) {
-        this.bs = new BackendSession(contact_point, keyspace);
+        try {
+            this.bs = new BackendSession(contactPoint, keyspace);
+        } catch (Exception e) {
+        }
     }
 
     public void initDatabase() {
-        bs.createDirectorTable();
-        bs.createEmployeeTable();
-        bs.createSkillTable();
-        bs.createTaskTable();
+        try {
+            bs.createDirectorTable();
+            bs.createEmployeeTable();
+            bs.createSkillTable();
+            bs.createTaskTable();
+        } catch (Exception e) {
+        }
     }
 
     // return UUID of the added Director
-    public String addDirector(String name) {
+    public void addDirector(String name) {
         try {
-            return bs.upsertDirector(name);
+            bs.upsertDirector(name);
         } catch (Exception e) {
-            return null;
         }
     }
 
@@ -47,7 +55,7 @@ public class Operations {
 
         try {
             for (String skill: skills) {
-                bs.upsertSkill(skill);
+                bs.upsertSkill(skill, employeeID);
             }
         } catch (Exception e) {
         }
@@ -55,7 +63,7 @@ public class Operations {
         return employeeID;
     }
 
-    public Employee getEmployee(String empolyeeID) {
+    public Employee getEmployee(String employeeID) {
         try {
             return bs.getEmployee(employeeID);
         } catch (Exception e) {
@@ -63,7 +71,7 @@ public class Operations {
         }
     }
 
-    public Skill getSkilledEmploees(String skill) {
+    public List<Skill> getSkilledEmploees(String skill) {
         try {
             return bs.getSkills(skill);
         } catch (Exception e) {
@@ -71,16 +79,16 @@ public class Operations {
         }
     }
 
-    public String addTask(String taskName, String deadline, int peopleRequired, List<String> skillsRequired) {
+    public String addTask(String directorName, String taskName, String deadline, int peopleRequired, List<String> skillsRequired) {
         String taskID;
         try {
-            taskID = bs.upsertEmployee(name, age, skills);
+            taskID = bs.upsertTask(taskName, deadline, peopleRequired, skillsRequired);
         } catch (Exception e) {
             return null;
         }
 
         try {
-            bs.addDirectorTask(taskID);
+            bs.addDirectorTask(taskID, directorName);
         } catch (Exception e) {
         }
 
@@ -95,7 +103,7 @@ public class Operations {
         }
 
         try {
-            bs.updateEmployeeTask(taskID);
+            bs.updateEmployeeTask(taskID, employeeID);
         } catch (Exception e) {
         }
     }
@@ -108,20 +116,25 @@ public class Operations {
         }
     }
 
-    public void finishTask(String taskID) {
+    public void finishTask(String directorName, String taskID) {
+        Task taskToFinish = getTask(taskID);
+        List<String> employeesAssigned = taskToFinish.getEmployeeIdList();
+
         try {
             bs.finishTask(taskID);
         } catch (Exception e) {
-            return null;
+            return;
         }
 
         try {
-            bs.removeDirectorTask(taskID);
+            bs.removeDirectorTask(taskID, directorName);
         } catch (Exception e) {
         }
 
         try {
-            bs.updateEmployeeTask(null);
+            for (String employeeID: employeesAssigned) {
+                bs.updateEmployeeTask(null, employeeID);
+            }
         } catch (Exception e) {
         }
     }

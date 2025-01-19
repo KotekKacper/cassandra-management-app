@@ -1,18 +1,23 @@
 package cassdemo.backend;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
+import com.datastax.driver.core.Session;
+
 import cassdemo.types.Director;
 import cassdemo.types.Employee;
 import cassdemo.types.Skill;
 import cassdemo.types.Task;
-
-import com.datastax.driver.core.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Objects;
-import java.util.Random;
-import java.util.concurrent.TimeUnit;
-import java.util.UUID;
 
 
 public class BackendSession {
@@ -27,13 +32,15 @@ public class BackendSession {
 	private static PreparedStatement CREATE_CLEAR_TASK;
 	private static PreparedStatement INSERT_INTO_DIRECTOR;
 	private static PreparedStatement SELECT_DIRECTOR;
-	private static PreparedStatement UPDATE_DIRECTOR_TASKS;
+	private static PreparedStatement ADD_DIRECTOR_TASK;
+	private static PreparedStatement REMOVE_DIRECTOR_TASK;
 	private static PreparedStatement INSERT_INTO_EMPLOYEE;
 	private static PreparedStatement SELECT_EMPLOYEE;
-	private static PreparedStatement UPDATE_EMPLOYEE;
+	private static PreparedStatement UPDATE_EMPLOYEE_TASK;
 	private static PreparedStatement INSERT_INTO_SKILL;
 	private static PreparedStatement SELECT_SKILL;
 	private static PreparedStatement INSERT_TASK;
+	private static PreparedStatement ADD_EMPLOYEE_TO_TASK;
 	private static PreparedStatement SELECT_TASK;
 	private static PreparedStatement FINISH_TASK;
 
@@ -50,8 +57,8 @@ public class BackendSession {
 
 	private void prepareStatements() throws BackendException {
 		try {
-			// SELECT_COLUMNS = session.prepare("SELECT * FROM dupa;").setConsistencyLevel(ConsistencyLevel.ONE);
-
+			// SELECT_COLUMNS = session.prepare("SELECT * FROM x;").setConsistencyLevel(ConsistencyLevel.ONE);
+			
 			CREATE_CLEAR_DIRECTOR = session.prepare("DROP TABLE IF EXISTS Director;" +
 													"CREATE TABLE Director (name text, tasks list<text>, PRIMARY KEY (name));");
 			CREATE_CLEAR_EMPLOYEE = session.prepare("DROP TABLE IF EXISTS Employee;" +
@@ -154,7 +161,6 @@ public class BackendSession {
 		}
 	
 		for (Row row : rs) {
-			String name = row.getString("name");
 			List<String> tasks = row.getList("tasks", String.class);
 			directors.add(new Director(name, tasks));
 		}
@@ -162,7 +168,7 @@ public class BackendSession {
 		if (directors.isEmpty()) {
 			return null;
 		} else {
-			return directors[0];
+			return directors.get(0);
 		}
 	}
 
@@ -233,7 +239,7 @@ public class BackendSession {
 		if (employees.isEmpty()) {
 			return null;
 		} else {
-			return employees[0];
+			return employees.get(0);
 		}
 	}
 
@@ -263,7 +269,7 @@ public class BackendSession {
 		logger.info("Skill " + skillName + " upserted");
 	}
 	
-	public List<Skill> selectSkills(String skillName) throws BackendException {
+	public List<Skill> getSkills(String skillName) throws BackendException {
 		List<Skill> skills = new ArrayList<>();
 		BoundStatement bs = new BoundStatement(SELECT_SKILL);
 		bs.bind(skillName);
@@ -276,7 +282,6 @@ public class BackendSession {
 		}
 	
 		for (Row row : rs) {
-			String skillName = row.getString("skill_name");
 			String employeeId = row.getString("employee_id");
 			skills.add(new Skill(skillName, employeeId));
 		}
@@ -288,7 +293,7 @@ public class BackendSession {
 		String generatedUUID = UUID.randomUUID().toString();
 
 		BoundStatement bs = new BoundStatement(INSERT_INTO_DIRECTOR);
-		bs.bind(generatedUUID, name, deadline, people_required, skillsRequired);
+		bs.bind(generatedUUID, name, deadline, peopleRequired, skillsRequired);
 
 		try {
 			session.execute(bs);
@@ -311,10 +316,10 @@ public class BackendSession {
 			throw new BackendException("Could not perform an upsert. " + e.getMessage() + ".", e);
 		}
 
-		logger.info("Task " + name + " upserted");
+		logger.info("Task " + taskID + " upserted");
 	}
 
-	public Task selectTask(String taskID) throws BackendException {
+	public Task getTask(String taskID) throws BackendException {
 		BoundStatement bs = new BoundStatement(SELECT_TASK);
 		bs.bind(taskID);
 	

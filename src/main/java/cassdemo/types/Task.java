@@ -11,9 +11,9 @@ public class Task {
     private int peopleRequired;
     private List<String> skillsRequired;
 
-    public Task(String taskId, String employeeId, String name, String deadline, boolean finished, int peopleRequired, List<String> skillsRequired) {
+    public Task(String taskId, List<String> employeeIds, String name, String deadline, boolean finished, int peopleRequired, List<String> skillsRequired) {
         this.taskId = taskId;
-        this.employeeIdList = employeeIdList != null ? employeeIdList : new ArrayList<>();
+        this.employeeIdList = employeeIds;
         this.name = name;
         this.deadline = deadline;
         this.finished = finished;
@@ -36,7 +36,7 @@ public class Task {
     public void setEmployeeIdList(List<String> employeeIdList) {
         this.employeeIdList = employeeIdList;
     }
-    
+
     public String getName() {
         return name;
     }
