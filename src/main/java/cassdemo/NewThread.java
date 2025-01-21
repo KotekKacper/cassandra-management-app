@@ -45,14 +45,18 @@ public class NewThread extends Thread  {
 			String taskName = id+"_T_" + String.valueOf(i);
 			int directorNr = random.nextInt(numberDirectors);
 			String taskID = op.addTaskAndAssignTaskToEmployees(listDirectors.get(directorNr), taskName, "01.01.2026", requireEmployee, result);
-			if(taskID == null) continue;
+			if(taskID == null) {
+				i -= 1;
+				continue;
+			}
 			try {
 				Thread.sleep(1);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 
-			op.finishTask(listDirectors.get(directorNr), taskID);
+			boolean finishWasOk = op.finishTask(listDirectors.get(directorNr), taskID);
+			if(!finishWasOk) i -= 1;
 		}
 	}
 }

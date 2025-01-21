@@ -215,16 +215,21 @@ public class Operations {
                 }
 
             }
+            if(!everyEmployeeHasGoodTask) {
+                bs.deleteTask(taskID);
+            }
         } catch (Exception e) {
             System.out.println(e);
         }
+
         return everyEmployeeHasGoodTask;
     }
 
-    public void finishTask(String directorName, String taskID) {
+    public boolean finishTask(String directorName, String taskID) {
         boolean result = finishOrDeleteTask(true, directorName, taskID);
         if(result) incrementStatsList(9);
         else incrementStatsList(10);
+        return result;
     }
 
     public void deleteTask(String directorName, String taskID) {
