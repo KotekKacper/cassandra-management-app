@@ -1,6 +1,7 @@
 package cassdemo.backend;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,6 +48,8 @@ public class BackendSession {
 	private static PreparedStatement ADD_EMPLOYEE_TO_TASK;
 	private static PreparedStatement SELECT_TASK;
 	private static PreparedStatement FINISH_TASK;
+	private static PreparedStatement DELETE_TASK;
+	private static PreparedStatement DELETE_EMPLOYEE_FROM_TASK;
 
 	public BackendSession(String contactPoint, String keyspace) throws BackendException {
 
@@ -68,7 +71,7 @@ public class BackendSession {
 			CREATE_TABLE_DIRECTOR = session.prepare("CREATE TABLE Director (name text, tasks list<text>, PRIMARY KEY (name));");
 			CREATE_TABLE_EMPLOYEE = session.prepare("CREATE TABLE Employee (employee_id text, name text, age int, skills list<text>, task_id text, PRIMARY KEY (employee_id));");
 			CREATE_TABLE_SKILL = session.prepare("CREATE TABLE Skill (skill_name text, employee_id text, PRIMARY KEY ((skill_name), employee_id));");
-			CREATE_TABLE_TASK = session.prepare("CREATE TABLE Task (task_id text, employee_id text, name text, deadline text, finished boolean, people_required int, skills_required list<text>, PRIMARY KEY (task_id));");
+			CREATE_TABLE_TASK = session.prepare("CREATE TABLE Task (task_id text, employee_id text, name text, deadline text, finished boolean, people_required int, skills_required list<text>, PRIMARY KEY ((task_id), employee_id));");
 		} catch (Exception e) {
 			throw new BackendException("Could not prepare statements. " + e.getMessage() + ".", e);
 		}
@@ -78,7 +81,6 @@ public class BackendSession {
 
 	public void prepareStatements() throws BackendException {
 		try {
-			// SELECT_COLUMNS = session.prepare("SELECT * FROM x;").setConsistencyLevel(ConsistencyLevel.ONE);
 			INSERT_INTO_DIRECTOR = session.prepare("INSERT INTO Director (name) VALUES (?);");
 			SELECT_DIRECTOR = session.prepare("SELECT * FROM Director WHERE name = ?;");
 			ADD_DIRECTOR_TASK = session.prepare("UPDATE Director SET tasks = tasks + ? WHERE name = ?;");
@@ -88,10 +90,12 @@ public class BackendSession {
 			UPDATE_EMPLOYEE_TASK = session.prepare("UPDATE Employee SET task_id = ? WHERE employee_id = ?;");
 			INSERT_INTO_SKILL = session.prepare("INSERT INTO Skill (skill_name, employee_id) VALUES (?, ?);");
 			SELECT_SKILL = session.prepare("SELECT * FROM Skill WHERE skill_name = ?;");
-			INSERT_TASK = session.prepare("INSERT INTO Task (task_id, name, deadline, people_required, skills_required) VALUES (?, ?, ?, ?, ?);");
+			INSERT_TASK = session.prepare("INSERT INTO Task (employee_id, finished, task_id, name, deadline, people_required, skills_required) VALUES ('', false, ?, ?, ?, ?, ?);");
 			ADD_EMPLOYEE_TO_TASK = session.prepare("INSERT INTO Task (task_id, employee_id) VALUES (?, ?);");
 			SELECT_TASK = session.prepare("SELECT * FROM Task WHERE task_id = ?;");
-			FINISH_TASK = session.prepare("UPDATE Task SET finished = true WHERE task_id = ?;");
+			FINISH_TASK = session.prepare("UPDATE Task SET finished = true WHERE task_id = ? AND employee_id = '';");
+			DELETE_TASK = session.prepare("DELETE FROM Task WHERE task_id = ?;");
+			DELETE_EMPLOYEE_FROM_TASK = session.prepare("DELETE FROM Task WHERE task_id = ? and employee_id = ?;");
 		} catch (Exception e) {
 			throw new BackendException("Could not prepare statements. " + e.getMessage() + ".", e);
 		}
@@ -181,20 +185,20 @@ public class BackendSession {
 		}
 	
 		for (Row row : rs) {
-			List<String> tasks = row.getList("tasks", String.class);
+			List<String> tasks = row.getList("tasks", String.class); 
 			directors.add(new Director(name, tasks));
 		}
 
 		if (directors.isEmpty()) {
 			return null;
 		} else {
-			return directors.get(0);
+			return directors.get(0); 
 		}
 	}
 
 	public void addDirectorTask(String taskID, String directorName) throws BackendException {
 		BoundStatement bs = new BoundStatement(ADD_DIRECTOR_TASK);
-		bs.bind(taskID, directorName);
+		bs.bind(Arrays.asList(taskID), directorName);
 
 		try {
 			session.execute(bs);
@@ -207,7 +211,7 @@ public class BackendSession {
 
 	public void removeDirectorTask(String taskID, String directorName) throws BackendException {
 		BoundStatement bs = new BoundStatement(REMOVE_DIRECTOR_TASK);
-		bs.bind(taskID, directorName);
+		bs.bind(Arrays.asList(taskID), directorName);
 
 		try {
 			session.execute(bs);
@@ -259,7 +263,7 @@ public class BackendSession {
 		if (employees.isEmpty()) {
 			return null;
 		} else {
-			return employees.get(0);
+			return employees.get(0); //??//
 		}
 	}
 
@@ -311,8 +315,7 @@ public class BackendSession {
 
 	public String upsertTask(String name, String deadline, int peopleRequired, List<String> skillsRequired) throws BackendException {
 		String generatedUUID = UUID.randomUUID().toString();
-
-		BoundStatement bs = new BoundStatement(INSERT_INTO_DIRECTOR);
+		BoundStatement bs = new BoundStatement(INSERT_TASK);
 		bs.bind(generatedUUID, name, deadline, peopleRequired, skillsRequired);
 
 		try {
@@ -339,6 +342,19 @@ public class BackendSession {
 		logger.info("Task " + taskID + " upserted");
 	}
 
+	public void deleteEmployeeFromTask(String taskID, String employeeID) throws BackendException {
+		BoundStatement bs = new BoundStatement(DELETE_EMPLOYEE_FROM_TASK);
+		bs.bind(taskID, employeeID);
+
+		try {
+			session.execute(bs);
+		} catch (Exception e) {
+			throw new BackendException("Could not perform an deleted. " + e.getMessage() + ".", e);
+		}
+
+		logger.info("Task " + taskID + " deleted");
+	}
+
 	public Task getTask(String taskID) throws BackendException {
 		BoundStatement bs = new BoundStatement(SELECT_TASK);
 		bs.bind(taskID);
@@ -359,27 +375,15 @@ public class BackendSession {
 
 		for (Row row : rs) {
 			String employeeId = row.getString("employee_id");
-			if (employeeId != null) {
+			if (!employeeId.isEmpty()) {
 				employeeIds.add(employeeId);
 			}
-	
-			// Pobierz dane taska, jeśli nie były pobrane, gdy są dostępne (czyli nie są `null`)
-			if (name == null) {
-				String potentialName = row.getString("name");
-				String potentialDeadline = row.getString("deadline");
-				Boolean potentialFinished = row.getBool("finished");
-				Integer potentialPeopleRequired = row.getInt("people_required");
-				List<String> potentialSkillsRequired = row.getList("skills_required", String.class);
-
-				// Aktualizuj dane taska, jeśli wszystkie pola są dostępne
-				if (potentialName != null && potentialDeadline != null && potentialFinished != null 
-					&& potentialPeopleRequired != null && potentialSkillsRequired != null) {
-					name = potentialName;
-					deadline = potentialDeadline;
-					finished = potentialFinished;
-					peopleRequired = potentialPeopleRequired;
-					skillsRequired = potentialSkillsRequired;
-				}
+			else {
+				name = row.getString("name");
+				deadline = row.getString("deadline");
+				finished = row.getBool("finished");
+				peopleRequired = row.getInt("people_required");
+				skillsRequired = row.getList("skills_required", String.class);
 			}
 		}
 
@@ -398,6 +402,19 @@ public class BackendSession {
 		}
 
 		logger.info("Task " + taskID + " finished");
+	}
+
+	public void deleteTask(String taskID) throws BackendException {
+		BoundStatement bs = new BoundStatement(DELETE_TASK);
+		bs.bind(taskID);
+
+		try {
+			session.execute(bs);
+		} catch (Exception e) {
+			throw new BackendException("Could not perform an upsert. " + e.getMessage() + ".", e);
+		}
+
+		logger.info("Task " + taskID + " deleted");
 	}
 
 	protected void finalize() {
