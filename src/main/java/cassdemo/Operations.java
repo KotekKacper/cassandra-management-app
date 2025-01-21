@@ -27,17 +27,18 @@ public class Operations {
             8 - task został anulowany bo praconwik dostał przydział do innego zadania
             9 - task został zakończony w 100% poprawnie
             10 - podczas kończenia tasku okazało się że pracownicy byli przydzieleni do innych zadań
+            11 - Podczas usuwania taska okaząło się że dyrektor nie był do niego przypisany
      */
 
     public Operations(String contactPoint, String keyspace) {
         try {
             this.bs = new BackendSession(contactPoint, keyspace);
-            this.listStats = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+            this.listStats = new int[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
             this.descStats = new String[]{
               "Liczba pracowników którzy: Po zakończeniu zadania: Pracownik robił odpowiednie zadanie: \t",
               "Liczba pracowników którzy: Po zakończeniu zadania: Pracownik robił złe zadanie: \t\t",
               "Liczba pracowników którzy: Po zakończeniu zadania: Pracownik nie robił żadnego zadanie: \t",
-              "Liczba pracowników którzy: Po zakończeniu zadania: Zadanie nie istnieje: \t\t\t",
+              "Liczba zadań którzy: Po zakończeniu zadania: Zadanie nie istnieje: \t\t\t\t",
               "Liczba pracowników którzy: Rezerwowanie pracownika: Pracownik dostał inne zadanie: \t\t",
               "Liczba pracowników którzy: Po skompletowaniu składu: Pracownik dostał inne zadanie: \t\t",
               "Liczba zadań które: Tworzenie składu: Poprawnie skompletowano skład drużyny: \t\t",
@@ -45,6 +46,7 @@ public class Operations {
               "Liczba zadań które: Tworzenie składu: Anulowano zadanie, ktoś dostał inne zadanie: \t\t",
               "Liczba zadań które: Kończenie taska: Wszysko było OK: \t\t\t\t\t",
               "Liczba zadań które: Kończenie taska: Ktoś robił inne zadanie: \t\t\t\t",
+              "Dyrektor: Kończenie taska: Okazało się że dyrektor nie miał taska: \t\t\t\t",
             };
         } catch (Exception e) {
             System.out.println(e);
@@ -171,7 +173,7 @@ public class Operations {
     private boolean finishOrDeleteTask(boolean finish, String directorName, String taskID) {
         Task taskToFinish = getTask(taskID);
         if(taskToFinish == null) {
-            incrementStatsList(3);
+            if(finish) incrementStatsList(3);
             return false;
         }
         List<String> employeesAssigned = taskToFinish.getEmployeeIdList();
@@ -186,6 +188,12 @@ public class Operations {
 
         try {
             bs.removeDirectorTask(taskID, directorName);
+//            if(bs.checkDirectorHasTask(taskID, directorName)) {
+//                bs.removeDirectorTask(taskID, directorName);
+//            }
+//            else {
+//                if(finish) incrementStatsList(11);
+//            }
         } catch (Exception e) {
             System.out.println(e);
         }

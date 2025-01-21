@@ -52,7 +52,7 @@ public class NewThread extends Thread  {
 				e.printStackTrace();
 			}
 
-			op.finishTask(listDirectors.get(0), taskID);
+			op.finishTask(listDirectors.get(directorNr), taskID);
 		}
 	}
 }

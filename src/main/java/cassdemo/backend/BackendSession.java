@@ -50,6 +50,7 @@ public class BackendSession {
 	private static PreparedStatement FINISH_TASK;
 	private static PreparedStatement DELETE_TASK;
 	private static PreparedStatement DELETE_EMPLOYEE_FROM_TASK;
+	private static PreparedStatement CHECK_DIRECTOR_TASK;
 
 	public BackendSession(String contactPoint, String keyspace) throws BackendException {
 
@@ -96,6 +97,7 @@ public class BackendSession {
 			FINISH_TASK = session.prepare("UPDATE Task SET finished = true WHERE task_id = ? AND employee_id = '';");
 			DELETE_TASK = session.prepare("DELETE FROM Task WHERE task_id = ?;");
 			DELETE_EMPLOYEE_FROM_TASK = session.prepare("DELETE FROM Task WHERE task_id = ? and employee_id = ?;");
+			CHECK_DIRECTOR_TASK = session.prepare("SELECT * FROM Director WHERE name = ? AND tasks CONTAINS ?  ALLOW FILTERING;");
 		} catch (Exception e) {
 			throw new BackendException("Could not prepare statements. " + e.getMessage() + ".", e);
 		}
@@ -222,6 +224,24 @@ public class BackendSession {
 		logger.info("Task " + taskID + " removed for director " + directorName);
 	}
 
+	public boolean checkDirectorHasTask(String taskID, String directorName) throws BackendException {
+		BoundStatement bs = new BoundStatement(CHECK_DIRECTOR_TASK);
+		bs.bind(directorName, taskID);
+
+		try {
+			ResultSet resultSet = session.execute(bs);
+			for (Row row : resultSet) {
+				logger.info("Director " + directorName + " has task " + taskID);
+				return true;
+			}
+		} catch (Exception e) {
+			throw new BackendException("Could not perform an check. " + e.getMessage() + ".", e);
+		}
+
+		logger.info("Director " + directorName + " hasn't task " + taskID);
+		return false;
+	}
+
 	public String upsertEmployee(String name, int age, List<String> skills) throws BackendException {
 		String generatedUUID = UUID.randomUUID().toString();
 
@@ -263,7 +283,7 @@ public class BackendSession {
 		if (employees.isEmpty()) {
 			return null;
 		} else {
-			return employees.get(0); //??//
+			return employees.get(0);
 		}
 	}
 

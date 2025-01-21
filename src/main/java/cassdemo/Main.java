@@ -51,11 +51,11 @@ public class Main {
 
 	private static void test(String contactPoint, String keyspace) {
 		int NUMBER_THREADS = 5;
-		int NUMBER_TASK_PER_THREAD = 5;
-		int NUMBER_EMPLOYEE = 100;
-		int NUMBER_DIRECTOR = 10;
-		int MIN_REQUIRE_EMPLOYEE = 2;
-		int MAX_REQUIRE_EMPLOYEE = 10;
+		int NUMBER_TASK_PER_THREAD = 50;
+		int NUMBER_EMPLOYEE = 200;
+		int NUMBER_DIRECTOR = 2;
+		int MIN_REQUIRE_EMPLOYEE = 5;
+		int MAX_REQUIRE_EMPLOYEE = 5;
 
 		List<String> listDirectors = new ArrayList<>();
 		List<String> listSkills = Arrays.asList("programming", "dancing", "musics", "writer");
@@ -93,7 +93,7 @@ public class Main {
 				Thread.currentThread().interrupt();
 			}
 		}
-		for(int i=0; i<11; i++) {
+		for(int i=0; i<12; i++) {
 			System.out.println(String.valueOf(i+1) + ". " + op.descStats[i] + " = " + String.valueOf(op.listStats[i]));
 		}
 	}
