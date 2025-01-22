@@ -242,6 +242,16 @@ public class Operations {
         return null;
     }
 
+    public boolean taskIsRunning(String taskID) {
+        if(taskID == null) return false;
+        try {
+            return bs.taskIsRunning(taskID);
+        } catch (Exception e) {
+            System.out.println(e);
+            return false;
+        }
+    }
+
     public String addTaskAndAssignTaskToEmployees(String directorName, String taskName, String deadline, int peopleRequired, List<String> skillsRequired) {
         String taskID = addTask(directorName, taskName, deadline, peopleRequired, skillsRequired);
         int numberRequiredSkills = skillsRequired.size();
@@ -253,9 +263,10 @@ public class Operations {
             boolean employeeWasFound = false;
             for(Skill s : listEmployees) {
                 String employeeID = s.getEmployeeId();
-                if (getEmployeeTask(employeeID) != null) continue;
-                assignTask(taskID, employeeID);
                 String tID = getEmployeeTask(employeeID);
+                if (taskIsRunning(tID)) continue;
+                assignTask(taskID, employeeID);
+                tID = getEmployeeTask(employeeID);
                 if (tID != null && !tID.equals(taskID)) {
                     incrementStatsList(4);
                     removeEmployeeTask(employeeID, taskID);

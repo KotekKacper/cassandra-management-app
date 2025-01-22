@@ -51,6 +51,7 @@ public class BackendSession {
 	private static PreparedStatement DELETE_TASK;
 	private static PreparedStatement DELETE_EMPLOYEE_FROM_TASK;
 	private static PreparedStatement CHECK_DIRECTOR_TASK;
+	private static PreparedStatement SELECT_TASK_DATA;
 
 	public BackendSession(String contactPoint, String keyspace) throws BackendException {
 
@@ -98,6 +99,7 @@ public class BackendSession {
 			DELETE_TASK = session.prepare("DELETE FROM Task WHERE task_id = ?;");
 			DELETE_EMPLOYEE_FROM_TASK = session.prepare("DELETE FROM Task WHERE task_id = ? and employee_id = ?;");
 			CHECK_DIRECTOR_TASK = session.prepare("SELECT * FROM Director WHERE name = ? AND tasks CONTAINS ?  ALLOW FILTERING;");
+			SELECT_TASK_DATA = session.prepare("SELECT * FROM Task WHERE task_id = ? AND employee_id = '';");
 		} catch (Exception e) {
 			throw new BackendException("Could not prepare statements. " + e.getMessage() + ".", e);
 		}
@@ -435,6 +437,23 @@ public class BackendSession {
 		}
 
 		logger.info("Task " + taskID + " deleted");
+	}
+
+	public boolean taskIsRunning(String taskID) throws BackendException {
+		BoundStatement bs = new BoundStatement(SELECT_TASK_DATA);
+		bs.bind(taskID);
+
+		try {
+			ResultSet rs = session.execute(bs);
+			boolean finished;
+			for (Row row : rs) {
+				finished = row.getBool("finished");
+				if(!finished) return true;
+			}
+			return false;
+		} catch (Exception e) {
+			throw new BackendException("Could not perform an upsert. " + e.getMessage() + ".", e);
+		}
 	}
 
 	protected void finalize() {

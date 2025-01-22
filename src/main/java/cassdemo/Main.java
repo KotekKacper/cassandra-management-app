@@ -50,17 +50,20 @@ public class Main {
 	}
 
 	private static void test(String contactPoint, String keyspace) {
-		int NUMBER_THREADS = 5;
-		int NUMBER_TASK_PER_THREAD = 50;
+		int NUMBER_THREADS = 10;
+		int NUMBER_TASK_PER_THREAD = 10;
 		int NUMBER_EMPLOYEE = 200;
 		int NUMBER_DIRECTOR = 2;
 		int MIN_REQUIRE_EMPLOYEE = 5;
 		int MAX_REQUIRE_EMPLOYEE = 5;
+		int NODE_NUMBER = 0;
 
 		List<String> listDirectors = new ArrayList<>();
 		List<String> listSkills = Arrays.asList("programming", "dancing", "musics", "writer");
 		Operations op = new Operations(contactPoint, keyspace);
-		op.initDatabase();
+		if(NODE_NUMBER == 0) {
+			op.initDatabase();
+		}
 		Random random = new Random();
 		for(int i=0; i<NUMBER_EMPLOYEE; i++) {
 			List<String> result = new ArrayList<>();
@@ -70,10 +73,10 @@ public class Main {
 			for (int j = 0; j < numSkillsFromList; j++) {
 				result.add(listSkills.get(j));
 			}
-			op.addEmployee("E_"+String.valueOf(i), i, result);
+			op.addEmployee("E_" + String.valueOf(NODE_NUMBER)+"_"+String.valueOf(i), i, result);
 		}
 		for(int i=0; i<NUMBER_DIRECTOR; i++) {
-			String directorName = "D_" + String.valueOf(i);
+			String directorName = "D_" + String.valueOf(NODE_NUMBER) + "_" + String.valueOf(i);
 			op.addDirector(directorName);
 			listDirectors.add(directorName);
 		}
